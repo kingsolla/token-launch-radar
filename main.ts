@@ -5,11 +5,14 @@
 // copies this repository's dashboard/ and screenshots/ to /output. Last, it writes /output/dossier.json,
 // the summary the judge reads, with the vendored make.fun library.
 //
-// The model is radar-2: it fits its own log-log size curve to the snapshot's traded tokens at run time
-// (market cap grows roughly with the square root of TVL), adds a bounded, shrunk category tilt, and
-// weights the value by a transparent launch probability built from the snapshot's own token rates.
-// Each row carries its launch score, its reason in plain words, and a costed farm plan. The board is
-// the strict pre-token universe (198 protocols on this snapshot, watchlist included) and nothing else.
+// The model is radar-3: it fits its own log-log size curve to the snapshot's traded tokens at run time
+// (market cap grows roughly with the square root of TVL), on one point per ticker with a Huber robust
+// fit, races every variant on five blind tests (leave-one-out, walk-forward forward and reverse, a
+// 2024 split, five-fold), bootstraps 200 refits for a value band and rank range per row, and nets
+// each farm plan to dollars (slice minus gas, bridge and a 4%/yr T-bill charge, with break-even and
+// a verdict). Each row carries its launch score, its reason in plain words, and a costed farm plan.
+// The board is the strict pre-token universe (198 protocols on this snapshot, watchlist included)
+// plus the 2 flagged long-shots below the floor, and nothing else.
 //
 // The dashboard is a static page, no framework and no network: dashboard/index.html, dashboard/app.css
 // and dashboard/app.js read /output/data.js, which this program writes from the same board.
@@ -91,9 +94,18 @@ writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEX
 
 const cal = radar.calibration;
 const bt = cal.backtest;
+const val = cal.validation;
+const looFam = val.loo_fam.variants['full']!;
+const wfFwd = val.wf_forward.variants['full']!;
+const split = val.split_2024.variants['full']!;
+const vc = cal.farm.verdict_counts;
 process.stdout.write(
   `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.live_size} live set aside)\n` +
-    `token radar: size curve log10(mcap) = ${cal.size_a.toFixed(4)} + ${cal.size_b.toFixed(4)}*log10(TVL) on ${bt.comps_n} live comps; ` +
-    `LOO median |log10 err| curve ${bt.curve_median_log10_err.toFixed(3)} dex, curve+tilt ${bt.tilt_median_log10_err.toFixed(3)} dex, global median ${bt.global_median_log10_err.toFixed(3)} dex\n` +
+    `token radar: dedupe ${cal.dedupe.raw_n} raw comps -> ${cal.dedupe.families_n} families (${cal.dedupe.merged_families} merged, ${cal.dedupe.merged_rows} rows); ` +
+    `OLS raw log10(mcap) = ${cal.fits.raw_ols.a.toFixed(4)} + ${cal.fits.raw_ols.b.toFixed(4)}*log10(TVL), Huber families = ${cal.size_a.toFixed(4)} + ${cal.size_b.toFixed(4)}*log10(TVL)\n` +
+    `token radar: LOO (full) raw n=${val.raw_n} ${val.loo_raw.variants['full']!.median_dex.toFixed(3)} dex, families n=${val.families_n} ${looFam.median_dex.toFixed(3)} dex (${(looFam.within_2x * 100).toFixed(1)}% within 2x); ` +
+    `WF forward ${wfFwd.median_dex.toFixed(3)} dex (n=${val.wf_forward.n_test}), split-2024 ${split.median_dex.toFixed(3)} dex (n=${val.split_2024.n_test}), flat multiple LOO ${bt.global_median_log10_err.toFixed(3)} dex\n` +
+    `token radar: LOO v1 baseline (curve, OLS raw) ${bt.curve_median_log10_err.toFixed(3)} dex, curve+tilt ${bt.tilt_median_log10_err.toFixed(3)} dex\n` +
+    `token radar: farm verdicts at $1,000: ROBUST ${vc.ROBUST}, FARM ${vc.FARM}, THIN ${vc.THIN}, SKIP ${vc.SKIP}\n` +
     `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (3 files), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')}\n`,
 );
