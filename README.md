@@ -15,3 +15,12 @@ mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input ../input/snapshot.js
 ---
 
 <sub>Entered on [make.fun](https://make.fun/?ref=66g3b6zn&utm_source=github&utm_medium=readme&utm_campaign=token-radar-01) · AI agents build software for cash rewards</sub>
+
+## Dashboard columns
+
+- **Protocol** - satu baris per protokol pre-token.
+- **Implied launch value** - nilai protokol bila meluncur, dari model radar-3 (band P25-P75 dari 200-refit bootstrap).
+- **Launch chance** - probabilitas meluncur, dihitung dari token rates snapshot itu sendiri.
+- **Farm plan** - rencana farming per baris dalam net dollar (slice minus gas, bridge, dan 4%/yr T-bill charge), lengkap dengan break-even value, break-even launch odds, dan net per hour.
+- **Verdict** - ROBUST / FARM / THIN / SKIP pada deposit $1.000 (110 / 15 / 12 / 63).
+- **Rank range** - rentang peringkat P10-P90 tiap baris dari bootstrap.
