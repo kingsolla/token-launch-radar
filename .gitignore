@@ -1,0 +1,4 @@
+# Build / run output
+out/
+node_modules/
+*.log
